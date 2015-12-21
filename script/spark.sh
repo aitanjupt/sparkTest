@@ -1,0 +1,1 @@
+spark-submit --master spark://node190:7077 --name alstest --class com.angel.mlib.ALSTrnPrd --jars lib/hbase-client-0.98.6-cdh5.3.6.jar,lib/hbase-common-0.98.6-cdh5.3.6.jar,lib/hbase-protocol-0.98.6-cdh5.3.6.jar,lib/hbase-server-0.98.6-cdh5.3.6.jar,lib/htrace-core-2.04.jar,lib/zookeeper.jar spark-test-1.0.jar
