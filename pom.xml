@@ -9,11 +9,21 @@
     <version>1.0</version>
     <packaging>jar</packaging>
 
+
     <repositories>
         <repository>
             <id>CN</id>
             <name>OSChina Central</name>
             <url>http://maven.oschina.net/content/groups/public/</url>
+        </repository>
+        <repository>
+            <id>osc_thirdparty</id>
+            <url>http://maven.oschina.net/content/repositories/thirdparty/</url>
+        </repository>
+        <repository>
+            <id>maven-net-cn</id>
+            <name>Maven China Mirror</name>
+            <url>http://maven.net.cn/content/groups/public/</url>
         </repository>
     </repositories>
 
@@ -49,12 +59,12 @@
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.10</artifactId>
-            <version>1.2.0</version>
+            <version>1.5.2</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-mllib_2.10</artifactId>
-            <version>1.2.0</version>
+            <version>1.5.2</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
@@ -98,9 +108,9 @@
             <version>0.98.6-hadoop2</version>
         </dependency>
         <!--<dependency>-->
-            <!--<groupId>org.apache.hbase</groupId>-->
-            <!--<artifactId>hbase</artifactId>-->
-            <!--<version>0.98.6-hadoop2</version>-->
+        <!--<groupId>org.apache.hbase</groupId>-->
+        <!--<artifactId>hbase</artifactId>-->
+        <!--<version>0.98.6-hadoop2</version>-->
         <!--</dependency>-->
         <!--<dependency>-->
         <!--<groupId>org.apache.spark</groupId>-->

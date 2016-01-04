@@ -101,6 +101,8 @@ public class ALSTrnPrd implements KryoRegistrator {
     //        Configuration hbconf = HBaseConfiguration.create();
 //        hbconf.set(TableInputFormat.INPUT_TABLE, "member");
 //        Scan scan = new Scan();
+//    scan.setStartRow(Bytes.toBytes("195861-1035177490"));
+//    scan.setStopRow(Bytes.toBytes("195861-1072173147"));
 //        scan.addFamily(Bytes.toBytes("xkeshi"));
 //        scan.addColumn(Bytes.toBytes("xkeshi"), Bytes.toBytes("id"));
 //        ClientProtos.Scan proto = null;

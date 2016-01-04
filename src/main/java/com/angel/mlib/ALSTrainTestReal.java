@@ -38,7 +38,7 @@ public class ALSTrainTestReal implements Serializable {
                         Integer num = Integer.parseInt(sarray[2]);
                         Integer maxNum = Integer.parseInt(sarray[3]);
                         Double rating = -1.0;
-                        if (1 <= maxNum) {//只买一次的rating=-1
+                        if (10 <= maxNum) {//只买一次的rating=-1
                             rating = (100.00 * num) / maxNum;
                         }
                         return new Rating(userId, itemId, rating);
@@ -53,7 +53,7 @@ public class ALSTrainTestReal implements Serializable {
             public Boolean call(Rating rating) throws Exception {
                 Double dRating = rating.rating();
                 if (0 == dRating.compareTo(-1.0)) {//过滤只买1次的rating
-                    return false;
+                    return false;//去除
                 }
                 return true;
             }
@@ -65,9 +65,15 @@ public class ALSTrainTestReal implements Serializable {
         JavaRDD<Rating> rdd_train = rdd_realRatings[0];//.repartition(numPartitions);
         JavaRDD<Rating> rdd_test = rdd_realRatings[1];//.repartition(numPartitions);
 
+        int rank = 30;//[10,50]
+        int numIterations = 20;//[20]
+        double lambda = 0.01;//[0.01,1.0]
+        int alpha = 1;//[1,40]
+
+//        for ()
+
         //使用ALS训练数据建立推荐模型 Build the recommendation model using ALS
-        int rank = 30;
-        int numIterations = 20;
+
 
         final MatrixFactorizationModel model = ALS.train(JavaRDD.toRDD(rdd_train), rank, numIterations, 1);
 
@@ -101,7 +107,7 @@ public class ALSTrainTestReal implements Serializable {
                         }
                 )).join(rdd_predictions);
 //        Long rl = new Random().nextLong();
-        rdd_testsAndPreds.repartition(1).saveAsTextFile("/dw_ext/outrealpre.data" + 332232);
+//        rdd_testsAndPreds.repartition(1).saveAsTextFile("/dw_ext/outrealpre.data" + 332232);
 
         JavaRDD<Tuple2<Double, Double>> rdd_testsAndPredsValues = rdd_testsAndPreds.values();
 
