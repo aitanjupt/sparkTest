@@ -1,9 +1,9 @@
 package com.angel.hadoopspark;
 
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.sql.api.java.JavaSchemaRDD;
-import org.apache.spark.sql.hive.api.java.JavaHiveContext;
+import org.apache.spark.SparkContext;
+import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.hive.HiveContext;
 
 /**
  * Created by dell on 2015/12/22.
@@ -16,15 +16,13 @@ public class SparkHiveTest {
 
     static void test1() {
         SparkConf conf = new SparkConf().setAppName("SparkHiveTest");
-        JavaSparkContext sc = new JavaSparkContext(conf);
+        SparkContext sc = new SparkContext(conf);
 
-        sc.addJar("/home/mllib/lib/hive-common-0.13.1-cdh5.3.6.jar");
         // Load and parse the train data from hive 尚未成功
-        JavaHiveContext hiveCtx = new JavaHiveContext(sc);
+        HiveContext hiveContext = new org.apache.spark.sql.hive.HiveContext(sc);
 
-
-        JavaSchemaRDD trainData = hiveCtx.sql("SELECT user_id,item_id,count from mds_member_item_num where dt=20151211");
-        System.out.println("trainData.count: " + trainData.count());
+        DataFrame dataFrame = hiveContext.sql("select * from mds_dm_iar_solditems where business_id = 112563");
+        System.out.println("trainData.count: " + dataFrame.count());
 //        JavaRDD<Rating> trainRatings = trainData.map(
 //                new Function<Row, Rating>() {
 //                    public Rating call(Row row) throws Exception {

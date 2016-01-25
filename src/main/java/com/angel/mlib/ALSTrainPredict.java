@@ -9,9 +9,6 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.recommendation.ALS;
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel;
 import org.apache.spark.mllib.recommendation.Rating;
-import org.apache.spark.sql.api.java.JavaSchemaRDD;
-import org.apache.spark.sql.api.java.Row;
-import org.apache.spark.sql.hive.api.java.JavaHiveContext;
 import scala.Tuple2;
 
 import java.io.Serializable;
@@ -26,17 +23,17 @@ public class ALSTrainPredict implements Serializable {
         JavaSparkContext sc = new JavaSparkContext(conf);
 
         // Load and parse the train data from hive 尚未成功
-        JavaHiveContext hiveCtx = new JavaHiveContext(sc);
+//        JavaHiveContext hiveCtx = new JavaHiveContext(sc);
 
-        JavaSchemaRDD trainData = hiveCtx.sql("SELECT user_id,item_id,num from mds_member_item_num where dt=20151211");
-        JavaRDD<Rating> trainRatings = trainData.map(
-                new Function<Row, Rating>() {
-                    public Rating call(Row row) throws Exception {
-                        return new Rating(row.getInt(0), row.getInt(1), row.getDouble(2));
-                    }
-                }
-        );
-        trainRatings.repartition(1).saveAsTextFile("file:///home/mllib/trainData");
+//        JavaSchemaRDD trainData = hiveCtx.sql("SELECT user_id,item_id,num from mds_member_item_num where dt=20151211");
+//        JavaRDD<Rating> trainRatings = trainData.map(
+//                new Function<Row, Rating>() {
+//                    public Rating call(Row row) throws Exception {
+//                        return new Rating(row.getInt(0), row.getInt(1), row.getDouble(2));
+//                    }
+//                }
+//        );
+//        trainRatings.repartition(1).saveAsTextFile("file:///home/mllib/trainData");
 
         // Load and parse the test data
         String testPath = "file:///home/mllib/test.data";
@@ -62,6 +59,7 @@ public class ALSTrainPredict implements Serializable {
         //使用ALS训练数据建立推荐模型 Build the recommendation model using ALS
         int rank = 10;
         int numIterations = 20;
+        JavaRDD<Rating> trainRatings = null;
         MatrixFactorizationModel model = ALS.train(JavaRDD.toRDD(trainRatings), rank, numIterations, 0.01);
         //model = new MatrixFactorizationModel()
         //使用推荐模型对testUserProducts用户商品进行预测评分，得到预测评分的数据集
