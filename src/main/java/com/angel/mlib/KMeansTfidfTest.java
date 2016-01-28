@@ -1,6 +1,8 @@
 package com.angel.mlib;
 
 
+import com.angel.util.SparkUtil;
+import com.google.common.base.*;
 import org.ansj.domain.Term;
 import org.ansj.splitWord.analysis.ToAnalysis;
 import org.apache.commons.collections.CollectionUtils;
@@ -10,6 +12,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.*;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.clustering.KMeans;
 import org.apache.spark.mllib.clustering.KMeansModel;
 import org.apache.spark.mllib.feature.HashingTF;
@@ -18,9 +21,13 @@ import org.apache.spark.mllib.feature.IDFModel;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.rdd.RDD;
-import scala.Tuple2;
+import scala.*;
+import scala.Function2;
+import scala.runtime.BoxedUnit;
 
 import java.io.Serializable;
+import java.lang.Boolean;
+import java.lang.Double;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -45,7 +52,15 @@ hadoop dfs -rm -r /dw_ext/mllib/kmean.test.out1
  */
 public class KMeansTfidfTest implements Serializable {
 
-    static SparkConf conf = new SparkConf().setAppName("KMeansTest");
+    //方案一KMeansTfidfTest：方案一热销商品有噪音，（卖的好的有这些词）
+    // step1:所有商品销售统计；step2:对统计数据Kmean算出热销商品；step3:对热销商品名称作TF挖掘
+
+    //方案二KMeansTfidfTest2：（这些词卖的好）
+    // step1:对所有销售订单内的商品名称作TFIDF挖掘；step2:对挖掘结果Kmean算出热点词
+
+    //方案三KMeansTfidfTest3：
+    // step1:对所有销售订单内的商品ID作TFIDF挖掘（消除噪音）；step2:对上步结果作Kmean得出热销商品ID；step3:对热销商品名称作TF挖掘
+    static SparkConf conf = new SparkConf().setAppName("KMeansTfidfTest");
     static final transient JavaSparkContext sc = new JavaSparkContext(conf);
 
     public static void main(String[] args) {
@@ -90,13 +105,10 @@ public class KMeansTfidfTest implements Serializable {
                 hotNamesAll = hotNames;
             else
                 hotNamesAll = hotNamesAll.union(hotNames);
+
+            doTFIDF2(hotNamesAll);
         }
-        doTFIDF3(hotNamesAll);
     }
-
-//    应该直接把所有的热销商品的order_itemname拉下，作词频。
-
-
 
 //    private static void doTFIDF(JavaRDD<String> hotNames) {
 //
@@ -123,30 +135,61 @@ public class KMeansTfidfTest implements Serializable {
 //    }
 
     private static void doTFIDF2(JavaRDD<String> hotNames) {
-        JavaRDD<Iterable<String>> documentsParsed = hotNames.flatMap(new FlatMapFunction<String, Iterable<String>>() {
+        final HashingTF hashingTF = new HashingTF();
+
+        JavaRDD<Iterable<String>> documentsParsed = hotNames.map(new Function<String, Iterable<String>>() {
             @Override
-            public Iterable<Iterable<String>> call(String s) throws Exception {
+            public Iterable<String> call(String s) throws Exception {
                 List<Term> terms = ToAnalysis.parse(s);
-                List<Iterable<String>> array = new ArrayList<>();
-                for (Term term : terms){
+                List<String> array = new ArrayList<>();
+                for (Term term : terms) {
                     String t = term.getName().trim();
                     if (!t.isEmpty()) {
-                        ArrayList<String> al = new ArrayList();
-                        al.add(term.getName());
-                        array.add(al);
+                        array.add(t);
                     }
                 }
                 return array;
             }
         });
-        HashingTF hashingTF = new HashingTF();
+
+        JavaPairRDD<Integer, String> wordListRDD = documentsParsed.flatMapToPair(new PairFlatMapFunction<Iterable<String>, Integer, String>() {
+            @Override
+            public Iterable<Tuple2<Integer, String>> call(Iterable<String> strings) throws Exception {
+                List<Tuple2<Integer, String>> ret = new ArrayList<>();
+                for (String s : strings) {
+                    int i = hashingTF.indexOf(s);
+                    Tuple2<Integer, String> t = new Tuple2<Integer, String>(i, s);
+                    ret.add(t);
+                }
+                return ret;
+            }
+        }).distinct();
+
         JavaRDD<Vector> tf = hashingTF.transform(documentsParsed);//算出词频
 
         IDFModel idf = new IDF().fit(tf);
         JavaRDD<Vector> tfidf = idf.transform(tf);//使用IDF加权
 
-        print(tf.collect());
-        print(tfidf.collect());
+        JavaPairRDD<Integer, Double> tfidfFlat = tfidf.flatMapToPair(new PairFlatMapFunction<Vector, Integer, Double>() {
+            @Override
+            public Iterable<Tuple2<Integer, Double>> call(Vector vector) throws Exception {
+                List<Tuple2<Integer, Double>> ret = new ArrayList<>();
+                int[] indices = vector.toSparse().indices();
+                for (int index : indices) {
+                    Double value = vector.apply(index);
+                    Tuple2<Integer, Double> t = new Tuple2<>(index, value);
+                    ret.add(t);
+                }
+                return ret;
+            }
+        }).distinct();
+
+        JavaPairRDD<Integer, Tuple2<String, Double>> tfidfMsg = wordListRDD.join(tfidfFlat);
+
+//        print(wordListRDD.collect());
+//        print(tf.collect());
+//        SparkUtil.print(tfidfMsg.collect());
+        tfidfMsg.repartition(1).saveAsTextFile("/dw_ext/mllib/KMeansTfidfTest.out");
     }
 
     private static void doTFIDF3(JavaRDD<String> hotNames) {
@@ -158,8 +201,7 @@ public class KMeansTfidfTest implements Serializable {
                 for (Term term : terms) {
                     String t = term.getName().trim();
                     if (!t.isEmpty()) {
-                        ArrayList<String> al = new ArrayList();
-                        array.add(term.getName());
+                        array.add(t);
                     }
                 }
                 return array;
@@ -171,8 +213,8 @@ public class KMeansTfidfTest implements Serializable {
         IDFModel idf = new IDF().fit(tf);
         JavaRDD<Vector> tfidf = idf.transform(tf);//使用IDF加权
 
-        print(tf.collect());
-        print(tfidf.collect());
+        SparkUtil.print(tf.collect());
+        SparkUtil.print(tfidf.collect());
     }
 
 
@@ -204,13 +246,6 @@ public class KMeansTfidfTest implements Serializable {
         }
         return maxValue;
     }
-
-    public static <T> void print(Collection<T> c) {
-        for (T t : c) {
-            System.out.println(t.toString());
-        }
-    }
-
 
 }
 

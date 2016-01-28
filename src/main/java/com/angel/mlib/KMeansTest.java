@@ -1,6 +1,7 @@
 package com.angel.mlib;
 
 
+import com.angel.util.SparkUtil;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -77,19 +78,12 @@ public class KMeansTest implements Serializable {
             }
         });
 
-        print(predict.collect());
+        SparkUtil.print(predict.collect());
 
 //        // Save and load model
 //        clusters.save(sc.sc(), "myModelPath");
 //        KMeansModel sameModel = KMeansModel.load(sc.sc(), "myModelPath");
     }
-
-    public static <T> void print(Collection<T> c) {
-        for (T t : c) {
-            System.out.println(t.toString());
-        }
-    }
-
 
 }
 
