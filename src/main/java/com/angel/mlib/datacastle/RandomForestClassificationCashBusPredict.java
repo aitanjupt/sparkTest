@@ -18,7 +18,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 
 /*
-spark-submit --master yarn-client --class com.angel.mlib.datacastle.RandomForestClassificationCashBus \
+spark-submit --master yarn-client --class com.angel.mlib.datacastle.TrainCashBus \
 --jars lib/hbase-client-0.98.6-cdh5.3.6.jar,lib/hbase-common-0.98.6-cdh5.3.6.jar\
 ,lib/hbase-protocol-0.98.6-cdh5.3.6.jar,lib/hbase-server-0.98.6-cdh5.3.6.jar\
 ,lib/htrace-core-2.04.jar,lib/zookeeper.jar,lib/spark-mllib_2.10-1.5.2.jar\
@@ -26,7 +26,7 @@ spark-submit --master yarn-client --class com.angel.mlib.datacastle.RandomForest
 ,lib/hive-serde-0.13.1-cdh5.3.6.jar \
 spark-test-1.0.jar
  */
-public class RandomForestClassificationCashBus implements Serializable {
+public class RandomForestClassificationCashBusPredict implements Serializable {
 
     public static void main(String[] args) {
         SparkConf conf = new SparkConf().setAppName("RandomForestClassificationCashBusTest");
@@ -51,47 +51,35 @@ public class RandomForestClassificationCashBus implements Serializable {
             }
         });
 
+//        final RandomForestModel model = TrainCashBus.trainRandomForestClassification(trainingData);
+//
+//        RandomForestClassificationCashBusTest.test(trainingData, model);
 
-// Train a RandomForest model.
-// Empty categoricalFeaturesInfo indicates all features are continuous.
-        Integer numClasses = 2;
-        HashMap<Integer, Integer> categoricalFeaturesInfo = new HashMap<Integer, Integer>();
-        Integer numTrees = 3; // Use more in practice.
-        String featureSubsetStrategy = "auto"; // Let the algorithm choose.
-        String impurity = "gini";
-        Integer maxDepth = 5;
-        Integer maxBins = 32;
-        Integer seed = 12345;
-
-        final RandomForestModel model = RandomForest.trainClassifier(trainingData, numClasses,
-                categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity, maxDepth, maxBins,
-                seed);
-
-        JavaPairRDD<Long, Vector> testData = testDatatext.mapToPair(new PairFunction<String, Long, Vector>() {
-            @Override
-            public Tuple2<Long, Vector> call(String s) throws Exception {
-                String[] ss = s.split(",");
-                Long uid = Long.parseLong(ss[0]);
-                double[] ds = new double[ss.length - 1];
-                for (int i = 0; i < ds.length; i++) {
-                    ds[i] = Double.parseDouble(ss[i + 1]);
-                }
-                Vector vector = Vectors.dense(ds);
-                Tuple2<Long, Vector> ret = new Tuple2<>(uid, vector);
-                return ret;
-            }
-        });
-
-
-        JavaPairRDD<Long, Double> userAndPrediction = testData.mapValues(new Function<Vector, Double>() {
-            @Override
-            public Double call(Vector vector) throws Exception {
-                Double predict = model.predict(vector);
-                return predict;
-            }
-        });
-
-        userAndPrediction.repartition(1).saveAsTextFile("/dw_ext/mllib/CashBus.test.predict");
+//        JavaPairRDD<Long, Vector> testData = testDatatext.mapToPair(new PairFunction<String, Long, Vector>() {
+//            @Override
+//            public Tuple2<Long, Vector> call(String s) throws Exception {
+//                String[] ss = s.split(",");
+//                Long uid = Long.parseLong(ss[0]);
+//                double[] ds = new double[ss.length - 1];
+//                for (int i = 0; i < ds.length; i++) {
+//                    ds[i] = Double.parseDouble(ss[i + 1]);
+//                }
+//                Vector vector = Vectors.dense(ds);
+//                Tuple2<Long, Vector> ret = new Tuple2<>(uid, vector);
+//                return ret;
+//            }
+//        });
+//
+//
+//        JavaPairRDD<Long, Double> userAndPrediction = testData.mapValues(new Function<Vector, Double>() {
+//            @Override
+//            public Double call(Vector vector) throws Exception {
+//                Double predict = model.predict(vector);
+//                return predict;
+//            }
+//        });
+//
+//        userAndPrediction.repartition(1).saveAsTextFile("/dw_ext/mllib/CashBus.test.predict");
 
     }
 }

@@ -136,6 +136,15 @@
             <artifactId>jedis</artifactId>
             <version>2.1.0</version>
         </dependency>
+
+        <dependency>
+            <groupId>rt</groupId>
+            <artifactId>s3</artifactId>
+            <version>0.2.1</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/sparkxgboost-0.2.1-s_2.10.jar
+            </systemPath>
+        </dependency>
     </dependencies>
 
 
